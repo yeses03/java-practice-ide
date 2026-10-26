@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Java Practice IDE</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="banner" class="banner hidden"></div>
+
+  <header class="topbar">
+    <div class="brand">☕ Java Practice IDE</div>
+    <div class="qpick">
+      <button id="btnQuestions" class="btn">Questions ▾</button>
+      <div id="questionMenu" class="menu hidden"></div>
+    </div>
+    <button id="btnNew" class="btn">+ New question</button>
+    <div class="spacer"></div>
+    <label class="small">Timeout
+      <input id="timeout" type="number" min="1" max="20" step="1" value="5"> s
+    </label>
+    <button id="btnReset" class="btn" title="Replace code with the starter template">Reset code</button>
+    <button id="btnRun" class="btn run" title="Cmd+Enter">▶ Run <kbd>⌘↵</kbd></button>
+    <button id="btnSubmit" class="btn submit" title="Cmd+Shift+Enter">Submit <kbd>⌘⇧↵</kbd></button>
+  </header>
+
+  <main class="layout">
+    <section class="pane left" id="leftPane">
+      <div id="pasteView" class="pasteview hidden">
+        <h2>Paste a question</h2>
+        <p class="muted">Paste the whole question including the "Sample test cases" section. Test cases are extracted automatically.</p>
+        <textarea id="pasteBox" spellcheck="false" placeholder="Single File Programming Question&#10;Problem Statement&#10;...&#10;Sample test cases :&#10;Input 1 :&#10;```&#10;...&#10;```"></textarea>
+        <div class="row">
+          <button id="btnParse" class="btn submit">Parse &amp; load</button>
+          <button id="btnCancelPaste" class="btn hidden">Cancel</button>
+        </div>
+      </div>
+
+      <div id="questionView" class="questionview hidden">
+        <div class="qhead">
+          <input id="titleInput" class="titleinput" spellcheck="false" title="Question title (editable)">
+          <button id="btnEditQuestion" class="btn small">Edit text / re-parse</button>
+        </div>
+        <div id="statement" class="statement"></div>
+
+        <details id="testsPanel" class="tests" open>
+          <summary>Parsed test cases <span id="testCount" class="pill"></span></summary>
+          <div id="parseWarnings" class="warnings"></div>
+          <div id="testList"></div>
+          <button id="btnAddTest" class="btn small">+ Add test case</button>
+          <span class="muted small">Tick "hidden" to hide that test's input/expected in the results.</span>
+        </details>
+      </div>
+    </section>
+
+    <section class="pane right">
+      <div id="editor"></div>
+    </section>
+  </main>
+
+  <section class="results" id="resultsPane">
+    <div class="rhead">
+      <strong>Results</strong>
+      <label class="small"><input id="useCustom" type="checkbox"> Run with custom input</label>
+      <textarea id="customInput" class="custominput hidden" spellcheck="false" placeholder="Custom stdin for Run…"></textarea>
+      <div class="spacer"></div>
+      <button id="btnToggleResults" class="btn small">Collapse</button>
+    </div>
+    <div id="resultsBody" class="rbody"><p class="muted">Press Run (⌘↵) to try the first sample, or Submit (⌘⇧↵) to judge all test cases.</p></div>
+  </section>
+
+  <script src="parser.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
