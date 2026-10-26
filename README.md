@@ -13,6 +13,8 @@ but would need Node installed first.)
 java-practice-ide/
 ├── app.py              Flask server: compile (javac) + run (java) + judge
 ├── requirements.txt    Flask
+├── lib/                MySQL Connector/J jar (JDBC driver)
+├── sql/                setup_mysql.sql (creates the test user + ri_db)
 ├── static/
 │   ├── index.html      page layout
 │   ├── style.css       dark theme
@@ -55,6 +57,21 @@ java-practice-ide/
    python app.py
    ```
    Then open **http://127.0.0.1:5050** in your browser. Stop the server with Ctrl+C.
+
+## JDBC questions (MySQL)
+
+Questions that connect to `jdbc:mysql://localhost/ri_db` (user `test`, password `test123`) work too.
+The MySQL Connector/J jar lives in `lib/` and is put on the classpath automatically.
+
+One-time setup (needs a running local MySQL server and its root password):
+
+```
+mysql -uroot -p < sql/setup_mysql.sql
+```
+
+In the question view, **Database setup SQL** holds the SQL that resets the table before *every* test.
+It is auto-filled when the question lists the table name, its columns (`id → INTEGER (primary key)`) and
+rows (`(1, 'John Doe', 20, 'A')`); otherwise type it yourself. Leave it empty for non-JDBC questions.
 
 ## Using it
 

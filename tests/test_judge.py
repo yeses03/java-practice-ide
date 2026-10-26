@@ -35,4 +35,18 @@ r = post('public class Main { public static void main(String[] a){ System.out.pr
 r = post('public class Main { public static void main(String[] a){ System.out.print("Hi"); } }', [{"input": "", "expected": "hi"}]); assert r["verdict"] == "Wrong Answer"; print("compare ok")
 # custom run (no expected)
 r = post(GOOD, [{"input": "1 1", "expected": None}]); assert r["verdict"] == "Finished" and r["results"][0]["stdout"] == "Winter"; print("custom ok")
+# JDBC (needs MySQL + sql/setup_mysql.sql applied; skipped otherwise)
+JDBC = '''import java.sql.*; import java.util.*;
+public class Main { public static void main(String[] a) throws Exception {
+  int id = new Scanner(System.in).nextInt();
+  try (Connection c = DriverManager.getConnection("jdbc:mysql://localhost/ri_db", "test", "test123");
+       PreparedStatement ps = c.prepareStatement("SELECT name FROM students WHERE id = ?")) {
+    ps.setInt(1, id); ResultSet rs = ps.executeQuery();
+    System.out.print(rs.next() ? rs.getString(1) : "none"); } } }'''
+SQL = "DROP TABLE IF EXISTS students; CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100)); INSERT INTO students VALUES (1, 'John Doe');"
+r = post(JDBC, [{"input": "1", "expected": "John Doe"}, {"input": "9", "expected": "none"}], setupSql=SQL)
+if r["verdict"] == "Setup SQL Error":
+    print("JDBC skipped:", r["results"][0]["stderr"])
+else:
+    assert r["verdict"] == "Accepted", r; print("JDBC ok")
 print("ALL OK")
