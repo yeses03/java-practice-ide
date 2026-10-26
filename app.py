@@ -9,6 +9,7 @@ that compiles and runs Java code with the JDK installed on this Mac.
 
 Run:  python app.py      (then open http://127.0.0.1:5050)
 """
+import glob
 import os
 import re
 import resource
@@ -30,6 +31,13 @@ MAX_OUTPUT_BYTES = 200_000  # we only keep/show this much of stdout/stderr
 MAX_FILE_BYTES = 20 * 1024 * 1024  # a runaway program can't write more than this
 MAX_TESTS = 100
 MAX_CODE_CHARS = 200_000
+MAX_SETUP_SQL_CHARS = 100_000
+
+# JDBC questions: any jar in lib/ is on the classpath, and a local MySQL server (user + db below)
+# is reset with the question's "setup SQL" before every test. Matches the credentials such questions give.
+LIB_JARS = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib", "*.jar")))
+DB_NAME, DB_USER, DB_PASS = "ri_db", "test", "test123"
+SETUP_TIMEOUT = 20.0
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
@@ -86,6 +94,35 @@ JDK = find_jdk()
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
+def classpath(class_dir):
+    return os.pathsep.join([class_dir, *LIB_JARS])
+
+
+def find_mysql_cli():
+    for cand in (shutil.which("mysql"), "/usr/local/mysql/bin/mysql", "/opt/homebrew/bin/mysql"):
+        if cand and os.path.isfile(cand):
+            return cand
+    return None
+
+
+def run_setup_sql(sql):
+    """Run the question's setup SQL against the local MySQL. Returns an error string or None."""
+    cli = find_mysql_cli()
+    if not cli:
+        return "The `mysql` command-line client wasn't found, so the setup SQL can't be run. See README (JDBC questions)."
+    try:
+        r = subprocess.run(
+            [cli, "-h", "127.0.0.1", "-u", DB_USER, DB_NAME],
+            input=sql, capture_output=True, text=True, timeout=SETUP_TIMEOUT,
+            env={**os.environ, "MYSQL_PWD": DB_PASS},
+        )
+    except subprocess.TimeoutExpired:
+        return "Setup SQL took too long and was stopped."
+    if r.returncode != 0:
+        return (r.stderr or r.stdout).strip() or "Setup SQL failed."
+    return None
+
+
 def strip_comments_and_strings(src):
     """Blank out comments and string/char literals so our regex checks on the
     source aren't fooled by e.g. a comment saying 'public class Foo'."""
@@ -182,7 +219,7 @@ def run_one_test(java_path, class_dir, io_dir, index, stdin_text, timeout):
     with open(in_path, "rb") as fin, open(out_path, "wb") as fout, open(err_path, "wb") as ferr:
         proc = subprocess.Popen(
             [java_path, "-Xmx256m", "-Xss16m", "-XX:+UseSerialGC", "-XX:TieredStopAtLevel=1",
-             "-cp", class_dir, "Main"],
+             "-cp", classpath(class_dir), "Main"],
             cwd=cwd,
             stdin=fin,
             stdout=fout,
@@ -213,7 +250,12 @@ def run_one_test(java_path, class_dir, io_dir, index, stdin_text, timeout):
     }
 
 
-def judge_one(java_path, class_dir, io_dir, index, test, timeout):
+def judge_one(java_path, class_dir, io_dir, index, test, timeout, setup_sql=""):
+    if setup_sql:
+        err = run_setup_sql(setup_sql)  # fresh database state for every test
+        if err:
+            return {"index": index + 1, "timeMs": 0, "exitCode": None, "stdout": "", "stderr": err,
+                    "verdict": "Setup SQL Error"}
     res = run_one_test(java_path, class_dir, io_dir, index, test.get("input", ""), timeout)
     result = {
         "index": index + 1,
@@ -291,6 +333,10 @@ def judge():
         if not isinstance(t, dict) or not isinstance(t.get("input", ""), str) \
                 or not (t.get("expected") is None or isinstance(t.get("expected"), str)):
             return jsonify(error="Malformed test case."), 400
+    setup_sql = data.get("setupSql", "")
+    if not isinstance(setup_sql, str) or len(setup_sql) > MAX_SETUP_SQL_CHARS:
+        return jsonify(error="Malformed setup SQL."), 400
+    setup_sql = setup_sql.strip()
     try:
         timeout = min(max(float(data.get("timeout", DEFAULT_TIMEOUT)), 0.5), MAX_TIMEOUT)
     except (TypeError, ValueError):
@@ -312,7 +358,7 @@ def judge():
 
         try:
             comp = subprocess.run(
-                [javac_path, "-encoding", "UTF-8", "-Xlint:-options", "Main.java"],
+                [javac_path, "-encoding", "UTF-8", "-Xlint:-options", "-cp", classpath(build_dir), "Main.java"],
                 cwd=build_dir, capture_output=True, text=True, timeout=COMPILE_TIMEOUT,
             )
         except subprocess.TimeoutExpired:
@@ -323,7 +369,7 @@ def judge():
                            verdict="Compilation Error", results=[])
 
         # Compile ONCE, then run the same classes for every test (each in a fresh cwd).
-        results = [judge_one(java_path, build_dir, io_dir, i, t, timeout) for i, t in enumerate(tests)]
+        results = [judge_one(java_path, build_dir, io_dir, i, t, timeout, setup_sql) for i, t in enumerate(tests)]
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
