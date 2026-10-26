@@ -63,11 +63,39 @@ java-practice-ide/
 Questions that connect to `jdbc:mysql://localhost/ri_db` (user `test`, password `test123`) work too.
 The MySQL Connector/J jar lives in `lib/` and is put on the classpath automatically.
 
-One-time setup (needs a running local MySQL server and its root password):
+### One-time MySQL setup
 
-```
-mysql -uroot -p < sql/setup_mysql.sql
-```
+1. **Install and start MySQL** (skip if `mysql --version` already works and the server is running):
+   ```
+   brew install mysql
+   brew services start mysql
+   ```
+   (Or use the installer from https://dev.mysql.com/downloads/mysql/ and start it from System Settings.)
+   Homebrew's MySQL has no root password; the installer asks you to set one.
+
+2. **Create the database and user** the questions expect (`ri_db`, user `test`, password `test123`).
+   Run this from the project folder:
+   ```
+   mysql -uroot -p < sql/setup_mysql.sql
+   ```
+   Enter your MySQL root password when prompted (just press Enter if you have none).
+   The script is safe to re-run. It contains:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS ri_db;
+   CREATE USER IF NOT EXISTS 'test'@'localhost' IDENTIFIED BY 'test123';
+   GRANT ALL PRIVILEGES ON ri_db.* TO 'test'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+3. **Check it worked:**
+   ```
+   mysql -h127.0.0.1 -utest -ptest123 ri_db -e "select 1"
+   ```
+   It should print `1`. Then restart the app (`python app.py`).
+
+If a JDBC run shows **Setup SQL Error** or `Access denied for user 'test'`, step 2 hasn't been done (or
+MySQL isn't running). The `mysql` command-line client must also be installed, because the app uses it
+to run the setup SQL.
 
 In the question view, **Database setup SQL** holds the SQL that resets the table before *every* test.
 It is auto-filled when the question lists the table name, its columns (`id → INTEGER (primary key)`) and
