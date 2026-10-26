@@ -100,7 +100,44 @@
     });
 
     if (!tests.length) warnings.push("No test cases found. Add them manually below.");
-    return { statement, tests, warnings };
+    return { statement, tests, warnings, setupSql: guessSetupSql(statement) };
+  }
+
+  /*
+   * Best-effort setup SQL for JDBC questions: needs a table name, a "col → TYPE" column list and
+   * "(1, 'John Doe', 20, 'A')" rows in the statement. Returns "" when anything is missing or
+   * doesn't line up (the user can then type the SQL by hand).
+   */
+  function guessSetupSql(statement) {
+    const text = String(statement).replace(/[\u2018\u2019]/g, "'");
+    const lines = text.split("\n");
+    const tableM = /columns\s*\(\s*`?(\w+)`?\s*\)/i.exec(text) ||
+      /\b(?!the\b|a\b|an\b|each\b|database\b|following\b)(\w+)\s+table\b/i.exec(text);
+    if (!tableM) return "";
+    const table = tableM[1];
+
+    const TYPE = /^(?:tiny|small|big)?int(?:eger)?|^(?:var)?char\s*\(\d+\)|^decimal\s*\([\d\s,]+\)|^double|^float|^date(?:time)?|^text|^boolean/i;
+    const cols = [];
+    for (const line of lines) {
+      const m = /^\s*[-*•]?\s*`?(\w+)`?\s*(?:→|->|:|-)\s*(.+)$/.exec(line);
+      if (!m) continue;
+      const t = TYPE.exec(m[2].trim());
+      if (!t) continue;
+      const type = t[0].replace(/^integer$/i, "INT").toUpperCase();
+      cols.push(`${m[1]} ${type}${/primary\s*key/i.test(m[2]) ? " PRIMARY KEY" : ""}`);
+    }
+
+    const rows = lines.map((l) => l.trim().replace(/^[-*•]\s*/, "")).filter((l) => /^\(.+\)[,;]?$/.test(l));
+    if (!cols.length || !rows.length) return "";
+    // Tuple lines must have as many top-level values as there are columns.
+    const arity = (r) => r.slice(1, r.lastIndexOf(")")).match(/'(?:[^']|'')*'|[^,]+/g).length;
+    if (rows.some((r) => arity(r) !== cols.length)) return "";
+
+    return [
+      `DROP TABLE IF EXISTS ${table};`,
+      `CREATE TABLE ${table} (${cols.join(", ")});`,
+      `INSERT INTO ${table} VALUES\n${rows.map((r) => "  " + r.replace(/[,;]$/, "")).join(",\n")};`,
+    ].join("\n");
   }
 
   // Pull a short title out of the statement for the history list.
@@ -112,7 +149,7 @@
     return first.length > 60 ? first.slice(0, 57) + "..." : first;
   }
 
-  const api = { parseQuestion, guessTitle };
+  const api = { parseQuestion, guessTitle, guessSetupSql };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.QuestionParser = api;
 })(typeof window !== "undefined" ? window : globalThis);

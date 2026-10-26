@@ -1,0 +1,55 @@
+Question No: 1
+Single File Programming Question
+Problem Statement
+
+John, a school administrator, has pre-populated his MySQL database's students table with the following records:
+
+(1, 'John Doe', 20, 'A')
+
+(2, 'Jane Smith', 22, 'B')
+
+(3, 'Sam Brown', 21, 'A')
+
+(4, 'Lucy Green', 23, 'C')
+
+(5, 'Michael Blue', 24, 'B')
+
+He now needs a Java program that takes a student ID as input and retrieves the corresponding student details from the students table.
+
+The system should connect to a MYSQL database using the following default credentials:
+
+DB URL: jdbc:mysql://localhost/ri_db
+Username: test
+Password: test123
+Input format :
+The input consists of an integer representing the student ID.
+
+Output format :
+If the student is found, the first line of output prints "Student Details:" followed by the student information (ID, Name, Age, and Grade).
+
+If the student is not found, the output prints an error message stating "No student found with ID <studentId>".
+
+Code constraints :
+Students Table Columns (students):
+
+id → INTEGER (primary key), 1 ≤ id ≤ 100000
+
+name → VARCHAR(100), non-empty
+
+age → INTEGER, 0 ≤ age ≤ 120
+
+grade → CHAR(1), valid grade letters (A, B, C, etc.)
+
+Sample test cases :
+Input 1 :
+1
+Output 1 :
+Student Details:
+ID: 1
+Name: John Doe
+Age: 20
+Grade: A
+Input 2 :
+11
+Output 2 :
+No student found with ID 11

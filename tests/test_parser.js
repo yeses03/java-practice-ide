@@ -34,4 +34,20 @@ assert.strictEqual(m.tests.length, 2);
 assert.deepStrictEqual(m.tests[1], { input: "B", expected: "b" });
 assert(m.warnings.some((w) => /Input 1 has no matching Output 1/.test(w)));
 
+// JDBC question: tests plus auto-generated setup SQL
+const jd = parseQuestion(fs.readFileSync(path.join(__dirname, "sample_jdbc_question.txt"), "utf8"));
+assert.strictEqual(jd.tests.length, 2);
+assert.strictEqual(jd.tests[1].expected, "No student found with ID 11");
+assert.strictEqual(jd.setupSql, [
+  "DROP TABLE IF EXISTS students;",
+  "CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100), age INT, grade CHAR(1));",
+  "INSERT INTO students VALUES",
+  "  (1, 'John Doe', 20, 'A'),",
+  "  (2, 'Jane Smith', 22, 'B'),",
+  "  (3, 'Sam Brown', 21, 'A'),",
+  "  (4, 'Lucy Green', 23, 'C'),",
+  "  (5, 'Michael Blue', 24, 'B');",
+].join("\n"));
+assert.strictEqual(r.setupSql, ""); // non-JDBC questions get none
+
 console.log("all parser tests passed");
