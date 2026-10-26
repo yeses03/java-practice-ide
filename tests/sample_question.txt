@@ -1,0 +1,96 @@
+Single File Programming Question
+Problem Statement
+
+Fiji wants to determine the season based on a birthday. The program must create a Birthday object using the provided month and day, serialize it into a file named birthdays.ser, then deserialize it and determine the corresponding season.
+
+The season must be determined after deserialization.
+
+Season Mapping
+
+* "Winter" for months 12, 1, and 2
+* "Spring" for months 3, 4, and 5
+* "Summer" for months 6, 7, and 8
+* "Fall" for months 9, 10, and 11
+* "Invalid month" if month is outside 1 to 12
+
+Predefined Methods Used
+
+* ObjectOutputStream.writeObject(Object obj)
+* ObjectInputStream.readObject()
+
+Note:
+The class must implement Serializable.
+Input format :
+The input contains two integers separated by space:
+month day
+
+Hint: Use int datatype for month and day.
+Output format :
+The output displays the corresponding season("Winter", "Spring", "Summer", "Fall") after deserialization.
+If month is invalid, print "Invalid month".
+
+Refer to the sample output for the formatting specifications.
+Code constraints :
+1 ≤ day ≤ 31
+Month can be any integer; only values 1–12 are valid, any other value should print "Invalid month".
+Day values are not validated against the actual number of days in a month.
+Display the corresponding season exactly as specified.
+Sample test cases :
+Input 1 :
+
+```
+12 15
+```
+
+Output 1 :
+
+```
+Winter
+```
+
+Input 2 :
+
+```
+4 21
+```
+
+Output 2 :
+
+```
+Spring
+```
+
+Input 3 :
+
+```
+6 5
+```
+
+Output 3 :
+
+```
+Summer
+```
+
+Input 4 :
+
+```
+10 18
+```
+
+Output 4 :
+
+```
+Fall
+```
+
+Input 5 :
+
+```
+13 20
+```
+
+Output 5 :
+
+```
+Invalid month
