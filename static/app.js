@@ -204,6 +204,8 @@ public class Main {
   function renderQuestion() {
     const q = current();
     $("titleInput").value = q.title;
+    $("setupSql").value = q.setupSql || "";
+    $("dbPanel").open = !!q.setupSql;
     // Samples shown in the statement come from the (editable) parsed tests, not raw text.
     $("statement").innerHTML = renderStatement(q.statement) + renderSamples(q.tests.filter((t) => !t.hidden));
   }
@@ -271,11 +273,13 @@ public class Main {
       const q = state.questions.find((x) => x.id === editingId);
       if (!confirm("Re-parsing replaces this question's test cases (including your manual edits). Continue?")) return;
       Object.assign(q, { text, statement: parsed.statement, tests: parsed.tests, warnings: parsed.warnings });
+      if (parsed.setupSql) q.setupSql = parsed.setupSql;
       state.currentId = q.id;
     } else {
       const q = {
         id: "q" + Date.now(), title: QuestionParser.guessTitle(parsed.statement), text,
         statement: parsed.statement, tests: parsed.tests, warnings: parsed.warnings, code: TEMPLATE,
+        setupSql: parsed.setupSql,
       };
       state.questions.push(q); state.currentId = q.id;
       setCode(TEMPLATE);
@@ -296,7 +300,7 @@ public class Main {
     const r = await fetch("/api/judge", {
       method: "POST",
       headers: { "Content-Type": "application/json" }, // required by the server (anti-CSRF)
-      body: JSON.stringify({ code: getCode(), tests, timeout: Number($("timeout").value) || 5 }),
+      body: JSON.stringify({ code: getCode(), tests, timeout: Number($("timeout").value) || 5, setupSql: (current() || {}).setupSql || "" }),
     });
     const data = await r.json().catch(() => ({ error: "Server returned something unreadable." }));
     if (!r.ok && !data.error) data.error = "Server error " + r.status;
@@ -344,7 +348,7 @@ public class Main {
     $("resultsBody").innerHTML = `<div class="verdict v-${kind === "bad" ? "bad" : "warn"}" style="font-size:15px">${esc(msg)}</div>`;
   }
 
-  const VCLASS = { Accepted: "v-ok", Finished: "v-ok", "Wrong Answer": "v-bad", "Compilation Error": "v-warn", "Runtime Error": "v-bad", "Time Limit Exceeded": "v-warn" };
+  const VCLASS = { Accepted: "v-ok", Finished: "v-ok", "Wrong Answer": "v-bad", "Compilation Error": "v-warn", "Runtime Error": "v-bad", "Time Limit Exceeded": "v-warn", "Setup SQL Error": "v-warn" };
   const VCOLOR = { Accepted: "var(--green)", Finished: "var(--green)", "Wrong Answer": "var(--red)", "Runtime Error": "var(--red)", "Time Limit Exceeded": "var(--amber)" };
 
   function trimEndLines(text) {
@@ -425,6 +429,8 @@ public class Main {
       case "Time Limit Exceeded":
         return head + `<p>The program was still running after ${Number($("timeout").value) || 5} s and was killed. Check for infinite loops, or a Scanner waiting for more input than the test provides.</p>`
           + (r.stdout && !hidden ? `<h5 class="muted">stdout so far</h5><pre class="out">${esc(r.stdout)}</pre>` : "");
+      case "Setup SQL Error":
+        return head + `<p>The setup SQL could not be run against MySQL (user test, database ri_db):</p><pre class="err">${esc(r.stderr)}</pre>`;
       default:
         return head;
     }
@@ -457,6 +463,7 @@ public class Main {
       saveState(); renderTests(); renderQuestion();
       const areas = $("testList").querySelectorAll(".inp"); areas[areas.length - 1].focus();
     });
+    $("setupSql").addEventListener("input", (e) => { const q = current(); q.setupSql = e.target.value; saveState(); });
     $("titleInput").addEventListener("input", (e) => { const q = current(); q.title = e.target.value; saveState(); renderMenu(); });
     $("btnQuestions").addEventListener("click", (e) => { e.stopPropagation(); renderMenu(); $("questionMenu").classList.toggle("hidden"); });
     document.addEventListener("click", (e) => { if (!e.target.closest(".qpick")) $("questionMenu").classList.add("hidden"); });

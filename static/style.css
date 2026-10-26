@@ -88,6 +88,11 @@ input[type=number] { width: 52px; background: var(--bg); color: var(--text); bor
   border-radius: 4px; padding: 6px; font: 12.5px var(--mono); resize: vertical;
 }
 
+.sqlbox {
+  width: 100%; min-height: 120px; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px; font: 12.5px var(--mono); resize: vertical; margin-bottom: 8px;
+}
+
 /* results */
 .results { height: 36vh; min-height: 36px; border-top: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; }
 .results.collapsed { height: auto; }

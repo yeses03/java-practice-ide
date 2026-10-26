@@ -44,6 +44,12 @@
         </div>
         <div id="statement" class="statement"></div>
 
+        <details id="dbPanel" class="tests">
+          <summary>Database setup SQL (JDBC questions)</summary>
+          <p class="muted small">Runs against local MySQL (user <code>test</code>, database <code>ri_db</code>) before every test, so each test starts from the same data. Auto-filled when the question lists a table, its columns and rows; edit freely. Leave empty for non-JDBC questions.</p>
+          <textarea id="setupSql" class="sqlbox" spellcheck="false" placeholder="DROP TABLE IF EXISTS students;&#10;CREATE TABLE students (...);&#10;INSERT INTO students VALUES (...);"></textarea>
+        </details>
+
         <details id="testsPanel" class="tests" open>
           <summary>Parsed test cases <span id="testCount" class="pill"></span></summary>
           <div id="parseWarnings" class="warnings"></div>
